@@ -51,7 +51,6 @@ public class SubscriptionService {
             throw new ValidationException("У пользователя уже есть подписка на сервис " + subscriptionDTO.getServiceName());
         }
 
-        // Валидация дат
         if (subscriptionDTO.getEndDate().isBefore(subscriptionDTO.getStartDate())) {
             log.warn("Попытка добавления подписки с некорректными датами для пользователя с ID: {}", userId);
             throw new ValidationException("Дата окончания подписки должна быть позже даты начала");
