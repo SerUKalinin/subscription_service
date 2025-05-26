@@ -5,7 +5,7 @@
 
 ## Технологии
 - Java 17
-- Spring Boot 3.5.0
+- Spring Boot 3.2.3
 - PostgreSQL
 - Docker
 - Gradle 8.13
