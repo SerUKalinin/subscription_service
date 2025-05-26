@@ -3,7 +3,7 @@ package com.subscriptionservice.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Обрабатывает исключения валидации Spring (MethodArgumentNotValidException).
-     * Возвращает HTTP 400 (Bad Request) со списком ошибок валидации по полям.
+     * Возвращает HTTP 400 (Bad Request) со списком ошибок валидации.
      *
      * @param ex исключение, которое было выброшено
      * @return ResponseEntity с картой ошибок валидации и статусом 400
@@ -61,9 +61,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            errors.put("error", errorMessage);
         });
         log.error("Ошибки валидации: {}", errors);
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);

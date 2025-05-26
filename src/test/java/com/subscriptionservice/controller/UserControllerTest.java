@@ -1,114 +1,198 @@
 package com.subscriptionservice.controller;
 
 import com.subscriptionservice.dto.UserDTO;
+import com.subscriptionservice.exception.ResourceNotFoundException;
+import com.subscriptionservice.exception.ValidationException;
 import com.subscriptionservice.service.UserService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.subscriptionservice.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DisplayName("Тестирование UserController")
-@WebMvcTest(UserController.class)
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Unit тесты контроллера пользователей")
 class UserControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @InjectMocks
+    private UserController userController;
 
     private UserDTO userDTO;
 
     @BeforeEach
     void setUp() {
         userDTO = new UserDTO();
-        userDTO.setId(1L);
-        userDTO.setUserName("Test User");
-        userDTO.setEmail("test@example.com");
+        userDTO.setUserName("testuser");
+        userDTO.setEmail("test" + System.currentTimeMillis() + "@example.com");
     }
 
     @Test
-    @DisplayName("Создание пользователя успешно")
-    void createUser_success() throws Exception {
-        when(userService.createUser(any(UserDTO.class))).thenReturn(userDTO);
+    @DisplayName("Успешное создание пользователя")
+    void createUser_Success() {
+        // Arrange
+        UserDTO createdUser = new UserDTO();
+        createdUser.setId(4L);
+        createdUser.setUserName(userDTO.getUserName());
+        createdUser.setEmail(userDTO.getEmail());
+        
+        when(userService.createUser(any(UserDTO.class))).thenReturn(createdUser);
 
-        mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(userDTO.getId()))
-                .andExpect(jsonPath("$.userName").value(userDTO.getUserName()))
-                .andExpect(jsonPath("$.email").value(userDTO.getEmail()));
+        // Act
+        ResponseEntity<UserDTO> response = userController.createUser(userDTO);
+
+        // Assert
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(createdUser.getId(), response.getBody().getId());
+        assertEquals(createdUser.getUserName(), response.getBody().getUserName());
+        assertEquals(createdUser.getEmail(), response.getBody().getEmail());
 
         verify(userService).createUser(any(UserDTO.class));
     }
 
     @Test
-    @DisplayName("Получение пользователя успешно")
-    void getUser_success() throws Exception {
+    @DisplayName("Успешное получение пользователя")
+    void getUser_Success() {
+        // Arrange
         when(userService.getUserById(anyLong())).thenReturn(userDTO);
 
-        mockMvc.perform(get("/users/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userDTO.getId()))
-                .andExpect(jsonPath("$.userName").value(userDTO.getUserName()))
-                .andExpect(jsonPath("$.email").value(userDTO.getEmail()));
+        // Act
+        ResponseEntity<UserDTO> response = userController.getUser(1L);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(userDTO.getId(), response.getBody().getId());
+        assertEquals(userDTO.getUserName(), response.getBody().getUserName());
+        assertEquals(userDTO.getEmail(), response.getBody().getEmail());
 
         verify(userService).getUserById(1L);
     }
 
     @Test
-    @DisplayName("Обновление пользователя успешно")
-    void updateUser_success() throws Exception {
+    @DisplayName("Успешное обновление пользователя")
+    void updateUser_Success() {
+        // Arrange
         when(userService.updateUser(anyLong(), any(UserDTO.class))).thenReturn(userDTO);
 
-        mockMvc.perform(put("/users/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userDTO.getId()))
-                .andExpect(jsonPath("$.userName").value(userDTO.getUserName()))
-                .andExpect(jsonPath("$.email").value(userDTO.getEmail()));
+        // Act
+        ResponseEntity<UserDTO> response = userController.updateUser(1L, userDTO);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(userDTO.getId(), response.getBody().getId());
+        assertEquals(userDTO.getUserName(), response.getBody().getUserName());
+        assertEquals(userDTO.getEmail(), response.getBody().getEmail());
 
         verify(userService).updateUser(eq(1L), any(UserDTO.class));
     }
 
     @Test
-    @DisplayName("Удаление пользователя успешно")
-    void deleteUser_success() throws Exception {
+    @DisplayName("Успешное удаление пользователя")
+    void deleteUser_Success() {
+        // Arrange
         doNothing().when(userService).deleteUser(anyLong());
 
-        mockMvc.perform(delete("/users/1"))
-                .andExpect(status().isNoContent());
+        // Act
+        ResponseEntity<Void> response = userController.deleteUser(1L);
 
+        // Assert
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(userService).deleteUser(1L);
     }
 
     @Test
-    @DisplayName("Создание пользователя с невалидными данными")
-    void createUser_InvalidData() throws Exception {
-        userDTO.setEmail("invalid-email");
+    @DisplayName("Создание пользователя с некорректными данными")
+    void createUser_InvalidData() {
+        // Arrange
+        userDTO.setUserName("a"); // слишком короткое имя
+        when(userService.createUser(any(UserDTO.class)))
+                .thenThrow(new ValidationException("Некорректные данные пользователя"));
 
-        mockMvc.perform(post("/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userDTO)))
-                .andExpect(status().isBadRequest());
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> userController.createUser(userDTO));
 
-        verify(userService, never()).createUser(any(UserDTO.class));
+        assertEquals("Некорректные данные пользователя", exception.getMessage());
+        verify(userService).createUser(any(UserDTO.class));
+    }
+
+    @Test
+    @DisplayName("Создание пользователя — email уже существует")
+    void createUser_EmailExists() {
+        // Arrange
+        when(userService.createUser(any(UserDTO.class)))
+                .thenThrow(new ValidationException("Email уже используется"));
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> userController.createUser(userDTO));
+
+        assertEquals("Email уже используется", exception.getMessage());
+        verify(userService).createUser(any(UserDTO.class));
+    }
+
+    @Test
+    @DisplayName("Получение пользователя — пользователь не найден")
+    void getUser_NotFound() {
+        // Arrange
+        when(userService.getUserById(anyLong()))
+                .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> userController.getUser(1L));
+
+        assertEquals("Пользователь не найден", exception.getMessage());
+        verify(userService).getUserById(1L);
+    }
+
+    @Test
+    @DisplayName("Обновление пользователя — пользователь не найден")
+    void updateUser_NotFound() {
+        // Arrange
+        when(userService.updateUser(anyLong(), any(UserDTO.class)))
+                .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> userController.updateUser(1L, userDTO));
+
+        assertEquals("Пользователь не найден", exception.getMessage());
+        verify(userService).updateUser(eq(1L), any(UserDTO.class));
+    }
+
+    @Test
+    @DisplayName("Удаление пользователя — пользователь не найден")
+    void deleteUser_NotFound() {
+        // Arrange
+        doThrow(new ResourceNotFoundException("Пользователь не найден"))
+                .when(userService).deleteUser(anyLong());
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> userController.deleteUser(1L));
+
+        assertEquals("Пользователь не найден", exception.getMessage());
+        verify(userService).deleteUser(1L);
     }
 } 

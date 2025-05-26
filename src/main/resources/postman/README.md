@@ -27,8 +27,8 @@
 
 ```json
 {
-    "userName": "John Doe",
-    "email": "john.doe@example.com"
+    "userName": "Иван Петров",
+    "email": "ivan@example.com"
 }
 ```
 

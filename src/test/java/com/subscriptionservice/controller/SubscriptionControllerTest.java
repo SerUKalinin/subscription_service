@@ -2,123 +2,204 @@ package com.subscriptionservice.controller;
 
 import com.subscriptionservice.dto.SubscriptionDTO;
 import com.subscriptionservice.dto.TopSubscriptionDTO;
+import com.subscriptionservice.dto.UserDTO;
+import com.subscriptionservice.exception.ResourceNotFoundException;
+import com.subscriptionservice.exception.ValidationException;
 import com.subscriptionservice.service.SubscriptionService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.instancio.Instancio;
-import org.instancio.Select;
+import com.subscriptionservice.service.UserService;
+import com.subscriptionservice.mapper.SubscriptionMapper;
+import com.subscriptionservice.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(SubscriptionController.class)
-@DisplayName("Тесты контроллера подписок")
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Unit тесты контроллера подписок")
 class SubscriptionControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Mock
     private SubscriptionService subscriptionService;
 
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private SubscriptionMapper subscriptionMapper;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @InjectMocks
+    private SubscriptionController subscriptionController;
+
     private SubscriptionDTO subscriptionDTO;
+    private UserDTO userDTO;
 
     @BeforeEach
     void setUp() {
-        subscriptionDTO = Instancio.of(SubscriptionDTO.class)
-                .set(Select.field("startDate"), LocalDateTime.now())
-                .set(Select.field("endDate"), LocalDateTime.now().plusMonths(1))
-                .create();
+        // Подготовка тестовых данных
+        userDTO = new UserDTO();
+        userDTO.setId(1L);
+        userDTO.setUserName("testuser");
+        userDTO.setEmail("test@example.com");
+
+        subscriptionDTO = new SubscriptionDTO();
+        subscriptionDTO.setId(1L);
+        subscriptionDTO.setServiceName("test-service");
+        subscriptionDTO.setStartDate(LocalDateTime.now());
+        subscriptionDTO.setEndDate(LocalDateTime.now().plusMonths(1));
+        subscriptionDTO.setUserId(1L);
     }
 
     @Test
     @DisplayName("Успешное добавление подписки")
-    void addSubscription_Success() throws Exception {
-        Mockito.when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class))).thenReturn(subscriptionDTO);
+    void addSubscription_Success() {
+        // Arrange
+        when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
+                .thenReturn(subscriptionDTO);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/users/1/subscriptions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(subscriptionDTO)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(subscriptionDTO.getId()))
-                .andExpect(jsonPath("$.serviceName").value(subscriptionDTO.getServiceName()))
-                .andExpect(jsonPath("$.userId").value(subscriptionDTO.getUserId()));
+        // Act
+        ResponseEntity<SubscriptionDTO> response = subscriptionController.addSubscription(1L, subscriptionDTO);
 
-        Mockito.verify(subscriptionService).addSubscription(Mockito.eq(1L), any(SubscriptionDTO.class));
+        // Assert
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(subscriptionDTO.getId(), response.getBody().getId());
+        assertEquals(subscriptionDTO.getServiceName(), response.getBody().getServiceName());
+        assertEquals(subscriptionDTO.getUserId(), response.getBody().getUserId());
+
+        verify(subscriptionService).addSubscription(eq(1L), any(SubscriptionDTO.class));
     }
 
     @Test
     @DisplayName("Успешное получение подписок пользователя")
-    void getUserSubscriptions_Success() throws Exception {
+    void getUserSubscriptions_Success() {
+        // Arrange
         List<SubscriptionDTO> subscriptions = Arrays.asList(subscriptionDTO);
-        Mockito.when(subscriptionService.getUserSubscriptions(anyLong())).thenReturn(subscriptions);
+        when(subscriptionService.getUserSubscriptions(1L)).thenReturn(subscriptions);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/users/1/subscriptions"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(subscriptionDTO.getId()))
-                .andExpect(jsonPath("$[0].serviceName").value(subscriptionDTO.getServiceName()))
-                .andExpect(jsonPath("$[0].userId").value(subscriptionDTO.getUserId()));
+        // Act
+        ResponseEntity<List<SubscriptionDTO>> response = subscriptionController.getUserSubscriptions(1L);
 
-        Mockito.verify(subscriptionService).getUserSubscriptions(1L);
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals(subscriptionDTO.getId(), response.getBody().get(0).getId());
+        assertEquals(subscriptionDTO.getServiceName(), response.getBody().get(0).getServiceName());
+
+        verify(subscriptionService).getUserSubscriptions(1L);
     }
 
     @Test
     @DisplayName("Успешное удаление подписки")
-    void deleteSubscription_Success() throws Exception {
-        Mockito.doNothing().when(subscriptionService).deleteSubscription(anyLong(), anyLong());
+    void deleteSubscription_Success() {
+        // Arrange
+        doNothing().when(subscriptionService).deleteSubscription(1L, 1L);
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/users/1/subscriptions/1"))
-                .andExpect(status().isNoContent());
+        // Act
+        ResponseEntity<Void> response = subscriptionController.deleteSubscription(1L, 1L);
 
-        Mockito.verify(subscriptionService).deleteSubscription(1L, 1L);
+        // Assert
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(subscriptionService).deleteSubscription(1L, 1L);
     }
 
     @Test
     @DisplayName("Успешное получение топовых подписок")
-    void getTopSubscriptions_Success() throws Exception {
-        TopSubscriptionDTO topSubscriptionDTO = new TopSubscriptionDTO();
-        topSubscriptionDTO.setServiceName("Netflix");
-        topSubscriptionDTO.setSubscriberCount(5L);
-        List<TopSubscriptionDTO> results = Arrays.asList(topSubscriptionDTO);
-        
-        Mockito.when(subscriptionService.getTopSubscriptions()).thenReturn(results);
+    void getTopSubscriptions_Success() {
+        // Arrange
+        TopSubscriptionDTO topSubscription = new TopSubscriptionDTO();
+        topSubscription.setServiceName("Netflix");
+        topSubscription.setSubscriberCount(5L);
+        List<TopSubscriptionDTO> topSubscriptions = Arrays.asList(topSubscription);
+        when(subscriptionService.getTopSubscriptions()).thenReturn(topSubscriptions);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/subscriptions/top"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].serviceName").value("Netflix"))
-                .andExpect(jsonPath("$[0].subscriberCount").value(5));
+        // Act
+        ResponseEntity<List<TopSubscriptionDTO>> response = subscriptionController.getTopSubscriptions();
 
-        Mockito.verify(subscriptionService).getTopSubscriptions();
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("Netflix", response.getBody().get(0).getServiceName());
+        assertEquals(5L, response.getBody().get(0).getSubscriberCount());
+
+        verify(subscriptionService).getTopSubscriptions();
     }
 
     @Test
-    @DisplayName("Добавление подписки с некорректными данными")
-    void addSubscription_InvalidData() throws Exception {
-        subscriptionDTO.setEndDate(subscriptionDTO.getStartDate().minusDays(1));
+    @DisplayName("Добавление подписки — пользователь не найден")
+    void addSubscription_UserNotFound() {
+        // Arrange
+        when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
+                .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/users/1/subscriptions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(subscriptionDTO)))
-                .andExpect(status().isBadRequest());
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> subscriptionController.addSubscription(1L, subscriptionDTO));
 
-        Mockito.verify(subscriptionService, Mockito.never()).addSubscription(anyLong(), any(SubscriptionDTO.class));
+        assertEquals("Пользователь не найден", exception.getMessage());
+        verify(subscriptionService).addSubscription(eq(1L), any(SubscriptionDTO.class));
     }
-}
+
+    @Test
+    @DisplayName("Добавление подписки — подписка уже существует")
+    void addSubscription_AlreadyExists() {
+        // Arrange
+        when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
+                .thenThrow(new ValidationException("У пользователя уже есть подписка на сервис"));
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> subscriptionController.addSubscription(1L, subscriptionDTO));
+
+        assertEquals("У пользователя уже есть подписка на сервис", exception.getMessage());
+        verify(subscriptionService).addSubscription(eq(1L), any(SubscriptionDTO.class));
+    }
+
+    @Test
+    @DisplayName("Удаление подписки — подписка не найдена")
+    void deleteSubscription_NotFound() {
+        // Arrange
+        doThrow(new ResourceNotFoundException("Подписка не найдена"))
+                .when(subscriptionService).deleteSubscription(1L, 1L);
+
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> subscriptionController.deleteSubscription(1L, 1L));
+
+        assertEquals("Подписка не найдена", exception.getMessage());
+        verify(subscriptionService).deleteSubscription(1L, 1L);
+    }
+
+    @Test
+    @DisplayName("Удаление подписки — подписка не принадлежит пользователю")
+    void deleteSubscription_NotBelongsToUser() {
+        // Arrange
+        doThrow(new ValidationException("Подписка не принадлежит пользователю"))
+                .when(subscriptionService).deleteSubscription(1L, 1L);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> subscriptionController.deleteSubscription(1L, 1L));
+
+        assertEquals("Подписка не принадлежит пользователю", exception.getMessage());
+        verify(subscriptionService).deleteSubscription(1L, 1L);
+    }
+} 
