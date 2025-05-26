@@ -29,7 +29,6 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
     private final SubscriptionMapper subscriptionMapper;
-    private final UserMapper userMapper;
 
     /**
      * Добавляет новую подписку для пользователя.
