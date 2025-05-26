@@ -17,7 +17,7 @@ public class SubscriptionDateValidator implements ConstraintValidator<Subscripti
     @Override
     public boolean isValid(SubscriptionDTO subscription, ConstraintValidatorContext context) {
         if (subscription == null || subscription.getStartDate() == null || subscription.getEndDate() == null) {
-            return true; // Валидация null значений обрабатывается отдельно
+            return true;
         }
         return subscription.getEndDate().isAfter(subscription.getStartDate());
     }
