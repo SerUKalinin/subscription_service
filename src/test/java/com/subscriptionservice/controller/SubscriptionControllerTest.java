@@ -52,7 +52,6 @@ class SubscriptionControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Подготовка тестовых данных
         userDTO = new UserDTO();
         userDTO.setId(1L);
         userDTO.setUserName("testuser");
@@ -69,14 +68,11 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Успешное добавление подписки")
     void addSubscription_Success() {
-        // Arrange
         when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
                 .thenReturn(subscriptionDTO);
 
-        // Act
         ResponseEntity<SubscriptionDTO> response = subscriptionController.addSubscription(1L, subscriptionDTO);
 
-        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(subscriptionDTO.getId(), response.getBody().getId());
@@ -89,14 +85,11 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Успешное получение подписок пользователя")
     void getUserSubscriptions_Success() {
-        // Arrange
         List<SubscriptionDTO> subscriptions = Arrays.asList(subscriptionDTO);
         when(subscriptionService.getUserSubscriptions(1L)).thenReturn(subscriptions);
 
-        // Act
         ResponseEntity<List<SubscriptionDTO>> response = subscriptionController.getUserSubscriptions(1L);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
@@ -109,13 +102,10 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Успешное удаление подписки")
     void deleteSubscription_Success() {
-        // Arrange
         doNothing().when(subscriptionService).deleteSubscription(1L, 1L);
 
-        // Act
         ResponseEntity<Void> response = subscriptionController.deleteSubscription(1L, 1L);
 
-        // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(subscriptionService).deleteSubscription(1L, 1L);
     }
@@ -123,17 +113,14 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Успешное получение топовых подписок")
     void getTopSubscriptions_Success() {
-        // Arrange
         TopSubscriptionDTO topSubscription = new TopSubscriptionDTO();
         topSubscription.setServiceName("Netflix");
         topSubscription.setSubscriberCount(5L);
         List<TopSubscriptionDTO> topSubscriptions = Arrays.asList(topSubscription);
         when(subscriptionService.getTopSubscriptions()).thenReturn(topSubscriptions);
 
-        // Act
         ResponseEntity<List<TopSubscriptionDTO>> response = subscriptionController.getTopSubscriptions();
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
@@ -146,11 +133,9 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Добавление подписки — пользователь не найден")
     void addSubscription_UserNotFound() {
-        // Arrange
         when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> subscriptionController.addSubscription(1L, subscriptionDTO));
 
@@ -161,11 +146,9 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Добавление подписки — подписка уже существует")
     void addSubscription_AlreadyExists() {
-        // Arrange
         when(subscriptionService.addSubscription(anyLong(), any(SubscriptionDTO.class)))
                 .thenThrow(new ValidationException("У пользователя уже есть подписка на сервис"));
 
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
                 () -> subscriptionController.addSubscription(1L, subscriptionDTO));
 
@@ -176,11 +159,9 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Удаление подписки — подписка не найдена")
     void deleteSubscription_NotFound() {
-        // Arrange
         doThrow(new ResourceNotFoundException("Подписка не найдена"))
                 .when(subscriptionService).deleteSubscription(1L, 1L);
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> subscriptionController.deleteSubscription(1L, 1L));
 
@@ -191,11 +172,9 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("Удаление подписки — подписка не принадлежит пользователю")
     void deleteSubscription_NotBelongsToUser() {
-        // Arrange
         doThrow(new ValidationException("Подписка не принадлежит пользователю"))
                 .when(subscriptionService).deleteSubscription(1L, 1L);
 
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
                 () -> subscriptionController.deleteSubscription(1L, 1L));
 

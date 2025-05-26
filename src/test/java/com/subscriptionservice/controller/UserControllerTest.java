@@ -39,6 +39,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        // Подготовка тестовых данных
         userDTO = new UserDTO();
         userDTO.setUserName("testuser");
         userDTO.setEmail("test" + System.currentTimeMillis() + "@example.com");
@@ -47,7 +48,6 @@ class UserControllerTest {
     @Test
     @DisplayName("Успешное создание пользователя")
     void createUser_Success() {
-        // Arrange
         UserDTO createdUser = new UserDTO();
         createdUser.setId(4L);
         createdUser.setUserName(userDTO.getUserName());
@@ -55,10 +55,8 @@ class UserControllerTest {
         
         when(userService.createUser(any(UserDTO.class))).thenReturn(createdUser);
 
-        // Act
         ResponseEntity<UserDTO> response = userController.createUser(userDTO);
 
-        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(createdUser.getId(), response.getBody().getId());
@@ -71,13 +69,10 @@ class UserControllerTest {
     @Test
     @DisplayName("Успешное получение пользователя")
     void getUser_Success() {
-        // Arrange
         when(userService.getUserById(anyLong())).thenReturn(userDTO);
 
-        // Act
         ResponseEntity<UserDTO> response = userController.getUser(1L);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(userDTO.getId(), response.getBody().getId());
@@ -90,13 +85,10 @@ class UserControllerTest {
     @Test
     @DisplayName("Успешное обновление пользователя")
     void updateUser_Success() {
-        // Arrange
         when(userService.updateUser(anyLong(), any(UserDTO.class))).thenReturn(userDTO);
 
-        // Act
         ResponseEntity<UserDTO> response = userController.updateUser(1L, userDTO);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(userDTO.getId(), response.getBody().getId());
@@ -109,13 +101,10 @@ class UserControllerTest {
     @Test
     @DisplayName("Успешное удаление пользователя")
     void deleteUser_Success() {
-        // Arrange
         doNothing().when(userService).deleteUser(anyLong());
 
-        // Act
         ResponseEntity<Void> response = userController.deleteUser(1L);
 
-        // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(userService).deleteUser(1L);
     }
@@ -123,12 +112,10 @@ class UserControllerTest {
     @Test
     @DisplayName("Создание пользователя с некорректными данными")
     void createUser_InvalidData() {
-        // Arrange
         userDTO.setUserName("a"); // слишком короткое имя
         when(userService.createUser(any(UserDTO.class)))
                 .thenThrow(new ValidationException("Некорректные данные пользователя"));
 
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
                 () -> userController.createUser(userDTO));
 
@@ -139,11 +126,9 @@ class UserControllerTest {
     @Test
     @DisplayName("Создание пользователя — email уже существует")
     void createUser_EmailExists() {
-        // Arrange
         when(userService.createUser(any(UserDTO.class)))
                 .thenThrow(new ValidationException("Email уже используется"));
 
-        // Act & Assert
         ValidationException exception = assertThrows(ValidationException.class,
                 () -> userController.createUser(userDTO));
 
@@ -154,11 +139,9 @@ class UserControllerTest {
     @Test
     @DisplayName("Получение пользователя — пользователь не найден")
     void getUser_NotFound() {
-        // Arrange
         when(userService.getUserById(anyLong()))
                 .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> userController.getUser(1L));
 
@@ -169,11 +152,9 @@ class UserControllerTest {
     @Test
     @DisplayName("Обновление пользователя — пользователь не найден")
     void updateUser_NotFound() {
-        // Arrange
         when(userService.updateUser(anyLong(), any(UserDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Пользователь не найден"));
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> userController.updateUser(1L, userDTO));
 
@@ -184,11 +165,9 @@ class UserControllerTest {
     @Test
     @DisplayName("Удаление пользователя — пользователь не найден")
     void deleteUser_NotFound() {
-        // Arrange
         doThrow(new ResourceNotFoundException("Пользователь не найден"))
                 .when(userService).deleteUser(anyLong());
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> userController.deleteUser(1L));
 
