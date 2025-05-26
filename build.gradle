@@ -1,16 +1,16 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.0'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.2.3'
+	id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = 'com.subscriptionservice'
 version = '0.0.1-SNAPSHOT'
 
+description = 'Сервис управления подписками пользователей'
+
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+	sourceCompatibility = '17'
 }
 
 configurations {
@@ -24,16 +24,39 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.liquibase:liquibase-core'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-web'        // Веб-приложение
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'   // Работа с БД
+	implementation 'org.springframework.boot:spring-boot-starter-validation' // Валидация данных
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// База данных
+	runtimeOnly 'org.postgresql:postgresql'                               // PostgreSQL драйвер
+	implementation 'org.liquibase:liquibase-core'                           // Liquibase для миграций
+
+	// API документация
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0' // Swagger UI
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'                                  // Автогенерация кода
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// MapStruct
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+	// Тестирование
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'  // Spring Test
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	jvmArgs '-javaagent:' + configurations.testRuntimeClasspath.find { it.name.contains('mockito-core') }.absolutePath
+	jvmArgs '-XX:+EnableDynamicAgentLoading'
+}
+
+tasks.withType(JavaCompile) {
+	options.compilerArgs += [
+		'-Amapstruct.defaultComponentModel=spring'
+	]
 }
